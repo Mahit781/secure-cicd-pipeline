@@ -33,14 +33,14 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
-                sh 'docker build -t your-image-name .'
+                sh 'docker build -t yourusername/your-repo-name:latest .'  // Replace with your image name
             }
         }
 
         stage('Trivy Scan') {
             steps {
                 echo 'Running Trivy security scan...'
-                sh 'trivy image your-image-name'
+                sh 'trivy image yourusername/your-repo-name:latest'  // Replace with your image name
             }
         }
 
@@ -50,7 +50,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push your-image-name
+                        docker push yourusername/your-repo-name:latest  // Replace with your image name
                     '''
                 }
             }
@@ -76,9 +76,7 @@ pipeline {
     post {
         always {
             echo 'Cleaning workspace...'
-            node('any') {  // Now specifying the label 'any' for the node block
-                cleanWs()  // Clean up workspace after the build
-            }
+            cleanWs()  // Clean up workspace after the build
         }
     }
 }
