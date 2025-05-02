@@ -1,5 +1,5 @@
 pipeline {
-    agent any  // This will define a default agent, so you may not need to specify label inside node
+    agent any  // This will define a default agent
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')  // Credentials for Docker Hub
@@ -76,9 +76,7 @@ pipeline {
     post {
         always {
             echo 'Cleaning workspace...'
-            node {  // Wrap cleanWs() inside a node block
-                cleanWs()  // Clean up workspace after the build
-            }
+            cleanWs()  // Clean up workspace after the build (no node required)
         }
     }
 }
