@@ -73,13 +73,11 @@ pipeline {
         }
     }
 
-    post {
-        always {
-            echo 'Cleaning workspace...'
-            // Wrap cleanWs inside a node block
-            node {
-                cleanWs()  // Clean up workspace after the build
-            }
-        }
+   post {
+    always {
+        echo 'Cleaning workspace...'
+        cleanWs()
+    }
+}
     }
 }
