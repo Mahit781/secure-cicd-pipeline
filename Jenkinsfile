@@ -1,9 +1,9 @@
 pipeline {
-    agent any  // This will define a default agent
+    agent any  // This defines a default agent
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')  // Credentials for Docker Hub
-        SONAR_TOKEN = credentials('sonarqube-token')             // Credentials for SonarQube
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')  // Docker Hub credentials
+        SONAR_TOKEN = credentials('sonarqube-token')             // SonarQube credentials
     }
 
     stages {
@@ -33,14 +33,14 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
-                sh 'docker build -t yourusername/your-repo-name:latest .'  // Replace with your image name
+                sh 'docker build -t mahit781/secure-cicd-pipeline:latest .'
             }
         }
 
         stage('Trivy Scan') {
             steps {
                 echo 'Running Trivy security scan...'
-                sh 'trivy image yourusername/your-repo-name:latest'  // Replace with your image name
+                sh 'trivy image mahit781/secure-cicd-pipeline:latest'
             }
         }
 
@@ -50,7 +50,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push yourusername/your-repo-name:latest  // Replace with your image name
+                        docker push mahit781/secure-cicd-pipeline:latest
                     '''
                 }
             }
@@ -73,11 +73,12 @@ pipeline {
         }
     }
 
-   post {
-    always {
-        echo 'Cleaning workspace...'
-        cleanWs()
+    post {
+        always {
+            echo 'Cleaning workspace...'
+            cleanWs()
+        }
     }
 }
-    }
-}
+   
+       
