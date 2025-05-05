@@ -76,12 +76,7 @@ pipeline {
     post {
         always {
             echo 'Cleaning workspace...'
-            // Wrap cleanWs inside a node block to avoid the error
-            node {
-                cleanWs()  // Clean up workspace after the build
-            }
+            cleanWs()  // This will clean up the workspace after the build
         }
     }
 }
-   
-       
