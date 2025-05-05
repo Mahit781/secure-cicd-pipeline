@@ -10,7 +10,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo 'Checking out repository...'
-                git 'https://github.com/Mahit781/secure-cicd-pipeline.git'
+                git branch: 'main', url: 'https://github.com/Mahit781/secure-cicd-pipeline.git'
             }
         }
 
