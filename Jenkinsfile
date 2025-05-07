@@ -17,7 +17,8 @@ pipeline {
         stage('Gitleaks Scan') {
             steps {
                 echo 'Running Gitleaks scan...'
-                sh 'gitleaks detect --source . --verbose --redact'
+                // Use full path to gitleaks.exe
+                sh 'C:/tools/gitleaks/gitleaks.exe detect --source . --verbose --redact'
             }
         }
 
