@@ -1,9 +1,9 @@
 pipeline {
-    agent any  // This defines a default agent
+    agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')  // Docker Hub credentials
-        SONAR_TOKEN = credentials('sonarqube-token')             // SonarQube credentials
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        SONAR_TOKEN = credentials('sonarqube-token')
     }
 
     stages {
@@ -17,8 +17,7 @@ pipeline {
         stage('Gitleaks Scan') {
             steps {
                 echo 'Running Gitleaks scan...'
-                // Use full path to gitleaks.exe
-                sh 'C:/tools/gitleaks/gitleaks.exe detect --source . --verbose --redact'
+                bat 'C:\\tools\\gitleaks\\gitleaks.exe detect --source . --verbose --redact'
             }
         }
 
@@ -77,7 +76,7 @@ pipeline {
     post {
         always {
             echo 'Cleaning workspace...'
-            cleanWs()  // This will clean up the workspace after the build
+            cleanWs()
         }
     }
 }
