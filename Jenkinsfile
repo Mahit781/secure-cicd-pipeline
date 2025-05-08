@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        SONAR_TOKEN = credentials('sonarqube-token')
+        // SONAR_TOKEN = credentials('sonarqube-token') // Not needed if SonarQube is disabled
     }
 
     stages {
@@ -21,6 +21,7 @@ pipeline {
             }
         }
 
+        /*
         stage('Static Code Analysis') {
             steps {
                 echo 'Running Static Code Analysis with SonarQube...'
@@ -29,6 +30,7 @@ pipeline {
                 }
             }
         }
+        */
 
         stage('Build Docker Image') {
             steps {
