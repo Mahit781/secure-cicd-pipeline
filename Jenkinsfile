@@ -2,15 +2,15 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        // SONAR_TOKEN = credentials('sonarqube-token') // Not needed if SonarQube is disabled
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // Replace with your actual Jenkins credentials ID
+        IMAGE_NAME = 'mahit781/sample-app'
     }
 
     stages {
         stage('Checkout') {
             steps {
                 echo 'Checking out repository...'
-                git branch: 'main', url: 'https://github.com/Mahit781/secure-cicd-pipeline.git'
+                git 'https://github.com/Mahit781/secure-cicd-pipeline.git'
             }
         }
 
@@ -21,39 +21,31 @@ pipeline {
             }
         }
 
-        /*
-        stage('Static Code Analysis') {
-            steps {
-                echo 'Running Static Code Analysis with SonarQube...'
-                withSonarQubeEnv('MySonarQube') {
-                    sh 'sonar-scanner'
-                }
-            }
-        }
-        */
-
         stage('Trivy Scan') {
             steps {
                 echo 'Running Trivy filesystem scan...'
-                sh 'docker run --rm -v $PWD:/app -w /app aquasec/trivy fs .'
+                script {
+                    def workspacePath = pwd().replace('\\', '/').replace('C:', '/c')
+                    sh """
+                        docker run --rm -v ${workspacePath}:/app -w /app aquasec/trivy fs .
+                    """
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
-                sh 'docker build -t mahit781/secure-cicd-pipeline:latest .'
+                sh "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                echo 'Pushing Docker image to DockerHub...'
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push mahit781/secure-cicd-pipeline:latest
-                    '''
+                echo 'Pushing image to DockerHub...'
+                script {
+                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
+                    sh "docker push ${IMAGE_NAME}:latest"
                 }
             }
         }
@@ -61,16 +53,8 @@ pipeline {
         stage('Deploy to VM') {
             steps {
                 echo 'Deploying to VM...'
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'my-vm',
-                            transfers: [sshTransfer(sourceFiles: '**/docker-compose.yml', execCommand: 'docker-compose up -d')],
-                            usePromotionTimestamp: false,
-                            verbose: true
-                        )
-                    ]
-                )
+                // Add your deployment commands here, e.g., ssh and docker run
+                echo 'Deployment step placeholder.'
             }
         }
     }
