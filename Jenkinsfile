@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // Replace with your actual Jenkins credentials ID
         IMAGE_NAME = 'mahit781/sample-app'
     }
 
@@ -41,6 +40,9 @@ pipeline {
         }
 
         stage('Push to DockerHub') {
+            environment {
+                DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // Set correct ID in Jenkins
+            }
             steps {
                 echo 'Pushing image to DockerHub...'
                 script {
@@ -53,8 +55,7 @@ pipeline {
         stage('Deploy to VM') {
             steps {
                 echo 'Deploying to VM...'
-                // Add your deployment commands here, e.g., ssh and docker run
-                echo 'Deployment step placeholder.'
+                // Replace with SSH and Docker run command as needed
             }
         }
     }
