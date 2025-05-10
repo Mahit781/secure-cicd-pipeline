@@ -1,16 +1,16 @@
 pipeline {
     agent any
-
+    
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        // SONAR_TOKEN = credentials('sonarqube-token') // Not needed if SonarQube is disabled
+        DOCKER_IMAGE = 'mahit781/secure-cicd-pipeline:latest'
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
     }
-
+    
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
-                echo 'Checking out repository...'
-                git branch: 'main', url: 'https://github.com/Mahit781/secure-cicd-pipeline.git'
+                echo 'Cloning repository...'
+                checkout scm
             }
         }
 
@@ -21,60 +21,40 @@ pipeline {
             }
         }
 
-        /*
-        stage('Static Code Analysis') {
-            steps {
-                echo 'Running Static Code Analysis with SonarQube...'
-                withSonarQubeEnv('MySonarQube') {
-                    sh 'sonar-scanner'
-                }
-            }
-        }
-        */
-
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
-                sh 'docker build -t mahit781/secure-cicd-pipeline:latest .'
+                script {
+                    docker.build(DOCKER_IMAGE)
+                }
             }
         }
 
         stage('Trivy Scan') {
             steps {
                 echo 'Running Trivy security scan...'
-                sh '''
-                    docker run --rm \
-                        -v /var/run/docker.sock:/var/run/docker.sock \
-                        aquasec/trivy image mahit781/secure-cicd-pipeline:latest
-                '''
+                script {
+                    // Fix volume mount issue for Windows
+                    sh 'docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy image ${DOCKER_IMAGE}'
+                }
             }
         }
 
         stage('Push to DockerHub') {
             steps {
                 echo 'Pushing Docker image to DockerHub...'
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push mahit781/secure-cicd-pipeline:latest
-                    '''
+                script {
+                    docker.withRegistry('', 'dockerhub-credentials') {
+                        docker.image(DOCKER_IMAGE).push()
+                    }
                 }
             }
         }
 
         stage('Deploy to VM') {
             steps {
-                echo 'Deploying to VM...'
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'my-vm',
-                            transfers: [sshTransfer(sourceFiles: '**/docker-compose.yml', execCommand: 'docker-compose up -d')],
-                            usePromotionTimestamp: false,
-                            verbose: true
-                        )
-                    ]
-                )
+                echo 'Deploying Docker image to VM...'
+                // Add your VM deployment steps here
             }
         }
     }
