@@ -1,9 +1,10 @@
 pipeline {
     agent any
     
-    environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-    }
+    // Define credentials - only access when needed to prevent early failure
+    // environment {
+    //     DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+    // }
     
     stages {
         stage('Checkout') {
@@ -40,8 +41,10 @@ pipeline {
         stage('Push to DockerHub') {
             steps {
                 echo 'Pushing to DockerHub...'
-                bat 'echo %DOCKERHUB_CREDENTIALS_PSW% | docker login -u %DOCKERHUB_CREDENTIALS_USR% --password-stdin'
-                bat 'docker push mahit781/secure-cicd-pipeline:latest'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PWD', usernameVariable: 'DOCKERHUB_USER')]) {
+                    bat 'echo %DOCKERHUB_PWD% | docker login -u %DOCKERHUB_USER% --password-stdin'
+                    bat 'docker push mahit781/secure-cicd-pipeline:latest'
+                }
             }
         }
         
@@ -57,9 +60,11 @@ pipeline {
     
     post {
         always {
-            echo 'Cleaning workspace...'
-            cleanWs()
-            bat 'docker logout'
+            node(null) {  // Ensure cleanWs runs inside a node
+                echo 'Cleaning workspace...'
+                cleanWs()
+                bat 'docker logout || echo "Docker logout failed, but continuing"'
+            }
         }
         success {
             echo 'Pipeline completed successfully!'
