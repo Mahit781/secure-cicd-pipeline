@@ -32,21 +32,17 @@ pipeline {
         }
         */
 
+        stage('Trivy Scan') {
+            steps {
+                echo 'Running Trivy filesystem scan...'
+                sh 'docker run --rm -v $PWD:/app -w /app aquasec/trivy fs .'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
                 sh 'docker build -t mahit781/secure-cicd-pipeline:latest .'
-            }
-        }
-
-        stage('Trivy Scan') {
-            steps {
-                echo 'Running Trivy security scan...'
-                sh '''
-                    docker run --rm \
-                        -v /var/run/docker.sock:/var/run/docker.sock \
-                        aquasec/trivy image mahit781/secure-cicd-pipeline:latest
-                '''
             }
         }
 
