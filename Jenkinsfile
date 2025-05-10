@@ -1,60 +1,80 @@
 pipeline {
-    agent any  // This means the pipeline will run on any available agent
+    agent any
 
     environment {
-        DOCKER_IMAGE = 'mahit781/secure-cicd-pipeline:latest'
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')  // Replace this with your actual credentials ID in Jenkins
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        // SONAR_TOKEN = credentials('sonarqube-token') // Not needed if SonarQube is disabled
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
-                echo 'Cloning repository...'
-                checkout scm  // Check out the code from your Git repository
+                echo 'Checking out repository...'
+                git branch: 'main', url: 'https://github.com/Mahit781/secure-cicd-pipeline.git'
             }
         }
 
         stage('Gitleaks Scan') {
             steps {
                 echo 'Running Gitleaks scan...'
-                bat 'C:\\tools\\gitleaks\\gitleaks.exe detect --source . --verbose --redact'  // Adjust path as necessary
+                bat 'C:\\tools\\gitleaks\\gitleaks.exe detect --source . --verbose --redact'
             }
         }
+
+        /*
+        stage('Static Code Analysis') {
+            steps {
+                echo 'Running Static Code Analysis with SonarQube...'
+                withSonarQubeEnv('MySonarQube') {
+                    sh 'sonar-scanner'
+                }
+            }
+        }
+        */
 
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
-                script {
-                    docker.build(DOCKER_IMAGE)  // Build the Docker image
-                }
+                sh 'docker build -t mahit781/secure-cicd-pipeline:latest .'
             }
         }
 
         stage('Trivy Scan') {
             steps {
                 echo 'Running Trivy security scan...'
-                script {
-                    // Running Trivy to scan the Docker image
-                    sh 'docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy image ${DOCKER_IMAGE}'
-                }
+                sh '''
+                    docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy image mahit781/secure-cicd-pipeline:latest
+                '''
             }
         }
 
         stage('Push to DockerHub') {
             steps {
                 echo 'Pushing Docker image to DockerHub...'
-                script {
-                    docker.withRegistry('', 'dockerhub-credentials') {
-                        docker.image(DOCKER_IMAGE).push()  // Push the Docker image to DockerHub
-                    }
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push mahit781/secure-cicd-pipeline:latest
+                    '''
                 }
             }
         }
 
         stage('Deploy to VM') {
             steps {
-                echo 'Deploying Docker image to VM...'
-                // Your VM deployment steps should go here (e.g., using Ansible, SSH, or other tools)
+                echo 'Deploying to VM...'
+                sshPublisher(
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: 'my-vm',
+                            transfers: [sshTransfer(sourceFiles: '**/docker-compose.yml', execCommand: 'docker-compose up -d')],
+                            usePromotionTimestamp: false,
+                            verbose: true
+                        )
+                    ]
+                )
             }
         }
     }
@@ -62,7 +82,7 @@ pipeline {
     post {
         always {
             echo 'Cleaning workspace...'
-            cleanWs()  // Clean up the workspace after the pipeline execution
+            cleanWs()
         }
     }
 }
